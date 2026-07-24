@@ -1,10 +1,8 @@
 "use client";
 
-import Editor from "@monaco-editor/react";
-<div className="w-1/2 border-r border-zinc-800">
-    <CodeEditor />
-</div>
-export default function CodeEditor() {
+import CodeEditor from "@/components/CodeEditor";
+
+export default function Home(): JSX.Element {
   return (
     <Editor
       height="100%"
