@@ -1,3 +1,4 @@
+import CodeEditor from "@/components/CodeEditor";
 "use client";
 
 export default function Home() {
