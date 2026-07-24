@@ -1,6 +1,8 @@
 "use client";
 
 import CodeEditor from "@/components/CodeEditor";
+import { Editor } from "@monaco-editor/react";
+import { JSX } from "react/jsx-runtime";
 
 export default function Home(): JSX.Element {
   return (
