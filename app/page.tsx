@@ -17,7 +17,7 @@ export default function Home() {
 
         {/* Left */}
         <div className="w-1/2 border-r border-zinc-800">
-          Editor
+          <CodeEditor />
         </div>
 
         {/* Right */}
