@@ -8,8 +8,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { runInSandbox, SANDBOX_TIMEOUT_MS } from "@/lib/sandbox/runner";
-import type { ExecuteRequestBody } from "@/lib/tracer/types";
+import { runInSandbox, SANDBOX_TIMEOUT_MS } from "../../../lib/sandbox/runner";
+import type { ExecuteRequestBody } from "../../../lib/tracer/types";
 
 const MAX_CODE_LENGTH = 20_000; // characters
 const MAX_TIMEOUT_MS = 10_000;
