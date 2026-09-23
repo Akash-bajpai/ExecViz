@@ -1,130 +1,110 @@
 import { NextRequest, NextResponse } from "next/server";
-import { exec } from "child_process";
-import { writeFileSync } from "fs";
+import { execFile } from "child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+export const runtime = "nodejs";
+
+const execFileAsync = promisify(execFile);
+
+type CommandError = {
+  stdout?: string;
+  stderr?: string;
+  message?: string;
+};
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, language = "java" } = await request.json();
+    const body = await request.json();
+    const code = body.code;
+    const language = body.language || "java";
 
-    if (!code) {
+    if (!code || typeof code !== "string") {
       return NextResponse.json(
-        { success: false, error: "No code provided" },
+        {
+          success: false,
+          error: "No code provided",
+        },
         { status: 400 }
       );
     }
 
     if (language === "java") {
       return await executeJava(code);
-    } else if (language === "python") {
+    }
+
+    if (language === "python") {
       return await executePython(code);
     }
 
     return NextResponse.json(
-      { success: false, error: "Unsupported language. Use 'java' or 'python'" },
+      {
+        success: false,
+        error: "Unsupported language. Use 'java' or 'python'",
+      },
       { status: 400 }
     );
   } catch (error) {
-    console.error("API Error:", error);
+    const typedError = error as CommandError;
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: typedError.message || "Unknown error",
       },
       { status: 500 }
     );
-  }
-}
-
-async function executePython(code: string) {
-  const tempDir = `/tmp`;
-  const pythonFile = join(
-    tempDir,
-    `script_${Date.now()}_${Math.random().toString(36).slice(2)}.py`
-  );
-
-  try {
-    writeFileSync(pythonFile, code);
-
-    try {
-      const { stdout, stderr } = await execAsync(`python3 ${pythonFile}`, {
-        timeout: 10000,
-        maxBuffer: 10 * 1024 * 1024,
-      });
-
-      const output = stdout + (stderr ? "\n" + stderr : "");
-
-      return NextResponse.json({
-        success: true,
-        output: output || "(No output)",
-        language: "python",
-      });
-    } catch (runtimeError) {
-      const error = runtimeError as any;
-      const output = error.stdout || "";
-      const errorMsg = error.stderr || error.message || "Runtime error";
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: output + "\n" + errorMsg,
-        },
-        { status: 400 }
-      );
-    }
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  } finally {
-    try {
-      await execAsync(`rm -f ${pythonFile}`);
-    } catch (cleanupError) {
-      console.error("Cleanup error:", cleanupError);
-    }
   }
 }
 
 async function executeJava(code: string) {
-  const tempDir = join("/tmp", `java_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-  const javaFile = join(tempDir, "Main.java");
+  let tempDir = "";
 
   try {
-    // Create temp directory
-    await execAsync(`mkdir -p ${tempDir}`);
+    tempDir = mkdtempSync(join(tmpdir(), "execviz-java-"));
 
-    // Write Java file
-    writeFileSync(javaFile, code);
+    const javaFile = join(tempDir, "Main.java");
+    writeFileSync(javaFile, code, "utf8");
 
-    // Compile Java code
     try {
-      await execAsync(`javac ${javaFile}`, { cwd: tempDir, timeout: 10000 });
+      await execFileAsync("javac", [javaFile], {
+        cwd: tempDir,
+        timeout: 10000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
     } catch (compileError) {
-      const error = compileError as any;
+      const error = compileError as CommandError;
+
       return NextResponse.json(
         {
           success: false,
-          error: error.stderr || error.message || "Compilation failed",
+          error:
+            error.stderr ||
+            error.stdout ||
+            error.message ||
+            "Java compilation failed",
+          type: "compilation_error",
         },
         { status: 400 }
       );
     }
 
-    // Execute compiled Java code
     try {
-      const { stdout, stderr } = await execAsync(`java -cp ${tempDir} Main`, {
-        timeout: 10000,
-        maxBuffer: 10 * 1024 * 1024,
-      });
+      const result = await execFileAsync(
+        "java",
+        ["-cp", tempDir, "Main"],
+        {
+          cwd: tempDir,
+          timeout: 10000,
+          maxBuffer: 10 * 1024 * 1024,
+        }
+      );
 
-      const output = stdout + (stderr ? "\n" + stderr : "");
+      const output = `${result.stdout || ""}${
+        result.stderr ? `\n${result.stderr}` : ""
+      }`.trim();
 
       return NextResponse.json({
         success: true,
@@ -132,29 +112,110 @@ async function executeJava(code: string) {
         language: "java",
       });
     } catch (runtimeError) {
-      const error = runtimeError as any;
-      const output = error.stdout || "";
-      const errorMsg = error.stderr || error.message || "Runtime error";
+      const error = runtimeError as CommandError;
 
-      return NextResponse.json({
-        success: false,
-        error: output + "\n" + errorMsg,
-      });
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            `${error.stdout || ""}\n${
+              error.stderr || error.message || "Runtime error"
+            }`.trim(),
+          type: "runtime_error",
+        },
+        { status: 400 }
+      );
     }
   } catch (error) {
+    const typedError = error as CommandError;
+
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: typedError.message || "System error",
+        type: "system_error",
       },
       { status: 500 }
     );
   } finally {
-    // Cleanup temp files
+    if (tempDir) {
+      try {
+        rmSync(tempDir, {
+          recursive: true,
+          force: true,
+        });
+      } catch (cleanupError) {
+        console.error("Cleanup error:", cleanupError);
+      }
+    }
+  }
+}
+
+async function executePython(code: string) {
+  let pythonFile = "";
+
+  try {
+    const tempDir = tmpdir();
+    pythonFile = join(
+      tempDir,
+      `execviz-python-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.py`
+    );
+
+    writeFileSync(pythonFile, code, "utf8");
+
+    const pythonCommand =
+      process.platform === "win32" ? "python" : "python3";
+
     try {
-      await execAsync(`rm -rf ${tempDir}`);
-    } catch (cleanupError) {
-      console.error("Cleanup error:", cleanupError);
+      const result = await execFileAsync(pythonCommand, [pythonFile], {
+        timeout: 10000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+
+      const output = `${result.stdout || ""}${
+        result.stderr ? `\n${result.stderr}` : ""
+      }`.trim();
+
+      return NextResponse.json({
+        success: true,
+        output: output || "(No output)",
+        language: "python",
+      });
+    } catch (runtimeError) {
+      const error = runtimeError as CommandError;
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            `${error.stdout || ""}\n${
+              error.stderr || error.message || "Runtime error"
+            }`.trim(),
+          type: "runtime_error",
+        },
+        { status: 400 }
+      );
+    }
+  } catch (error) {
+    const typedError = error as CommandError;
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: typedError.message || "System error",
+        type: "system_error",
+      },
+      { status: 500 }
+    );
+  } finally {
+    if (pythonFile) {
+      try {
+        rmSync(pythonFile, { force: true });
+      } catch (cleanupError) {
+        console.error("Python cleanup error:", cleanupError);
+      }
     }
   }
 }
