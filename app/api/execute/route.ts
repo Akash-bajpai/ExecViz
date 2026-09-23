@@ -1,3 +1,4 @@
+import vm from "node:vm";
 import { NextRequest, NextResponse } from "next/server";
 import { execFile } from "child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
@@ -31,21 +32,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (language === "java") {
-      return await executeJava(code);
-    }
+   if (language === "javascript") {
+  return executeJavaScript(code);
+}
 
-    if (language === "python") {
-      return await executePython(code);
-    }
+if (language === "java") {
+  return await executeJava(code);
+}
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: "Unsupported language. Use 'java' or 'python'",
-      },
-      { status: 400 }
-    );
+if (language === "python") {
+  return await executePython(code);
+}
+
+return NextResponse.json(
+  {
+    success: false,
+    error: "Unsupported language. Use 'javascript', 'java', or 'python'",
+  },
+  { status: 400 }
+);
+
   } catch (error) {
     const typedError = error as CommandError;
 
@@ -217,5 +223,70 @@ async function executePython(code: string) {
         console.error("Python cleanup error:", cleanupError);
       }
     }
+  }
+}
+function executeJavaScript(code: string) {
+  const output: string[] = [];
+
+  const safeConsole = {
+    log: (...values: unknown[]) => {
+      output.push(values.map(formatValue).join(" "));
+    },
+    error: (...values: unknown[]) => {
+      output.push(`[ERROR] ${values.map(formatValue).join(" ")}`);
+    },
+    warn: (...values: unknown[]) => {
+      output.push(`[WARN] ${values.map(formatValue).join(" ")}`);
+    },
+  };
+
+  try {
+    const context = vm.createContext({
+      console: safeConsole,
+      Math,
+      JSON,
+      Date,
+      Number,
+      String,
+      Boolean,
+      Array,
+      Object,
+    });
+
+    vm.runInContext(code, context, {
+      timeout: 5000,
+      filename: "execviz-user-code.js",
+    });
+
+    return NextResponse.json({
+      success: true,
+      output: output.join("\n") || "(No output)",
+      language: "javascript",
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "JavaScript runtime error",
+        type: "runtime_error",
+      },
+      { status: 400 }
+    );
+  }
+}
+
+function formatValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "undefined") {
+    return "undefined";
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
   }
 }

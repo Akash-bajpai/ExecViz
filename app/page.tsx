@@ -9,7 +9,7 @@ export default function Home() {
   const [output, setOutput] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
-  const [language, setLanguage] = useState<Language>("java");
+  const [language, setLanguage] = useState<Language>("javascript");
   const [supportedLanguages, setSupportedLanguages] = useState<Language[]>([
     "java",
     "python",
