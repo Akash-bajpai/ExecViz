@@ -87,7 +87,6 @@ Returns an ordered array of trace steps the Viz-Engine plays back. Full contract
 | Name | Role |
 |---|---|
 | **Akash Bajpai** | Frontend Lead — UI/UX, Monaco Editor integration, Studio workspace layout |
-| **Arush Kumar** | Backend — AST instrumentation, sandboxed execution engine, `/api/execute` |
 | **Hamza Hasan** | Viz-Engine — execution trace playback, animation, visualization layer |
 
 ---
