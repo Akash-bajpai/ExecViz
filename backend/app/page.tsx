@@ -1,5 +1,6 @@
-import CodeEditor from "@/components/CodeEditor";
 "use client";
+
+import CodeEditor from "@/components/CodeEditor";
 
 export default function Home() {
   return (
@@ -8,7 +9,7 @@ export default function Home() {
       {/* Navbar */}
       <header className="h-14 border-b border-zinc-800 flex items-center px-6">
         <h1 className="text-xl font-bold text-cyan-400">
-          CodeViz
+          ExecViz
         </h1>
       </header>
 
@@ -17,7 +18,7 @@ export default function Home() {
 
         {/* Left */}
         <div className="w-1/2 border-r border-zinc-800">
-          <CodeEditor />
+          <CodeEditor onRun={() => undefined} language="javascript" />
         </div>
 
         {/* Right */}

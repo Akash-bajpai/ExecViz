@@ -42,13 +42,11 @@ ExecViz/
 │           └── route.ts    # POST /api/execute — runs & traces code
 ├── components/
 │   └── CodeEditor.tsx      # Monaco editor wrapper
-├── lib/
-│   ├── parser/
-│   │   └── instrument.ts   # AST instrumentation (Babel)
-│   ├── sandbox/
-│   │   └── runner.ts       # VM sandbox + trace collector
-│   └── tracer/
-│       └── types.ts        # Shared trace contract
+├── backend/
+│   ├── lib/parser/instrument.ts  # Inherited AST instrumentation
+│   ├── lib/sandbox/runner.ts     # Inherited VM sandbox + trace collector
+│   └── lib/tracer/types.ts       # Inherited shared trace contract
+├── docs/                         # Architecture, API, status, and V0 checklist
 └── README.md
 ```
 
@@ -57,7 +55,7 @@ ExecViz/
 ## 🚀 Getting Started
 
 ```bash
-git clone https://github.com/arushkumar-aiml/ExecViz.git
+git clone https://github.com/Akash-bajpai/ExecViz.git
 cd ExecViz
 npm install
 npm run dev
@@ -78,7 +76,7 @@ Open [http://localhost:3000](http://localhost:3000) to see the Studio.
 }
 ```
 
-Returns an ordered array of trace steps the Viz-Engine plays back. Full contract in [`lib/tracer/types.ts`](./lib/tracer/types.ts).
+Returns an ordered array of trace steps the Viz-Engine plays back. The inherited contract is documented in [`backend/lib/tracer/types.ts`](./backend/lib/tracer/types.ts), with the active coordination contract in [`docs/API_CONTRACT.md`](./docs/API_CONTRACT.md).
 
 ---
 
@@ -86,8 +84,9 @@ Returns an ordered array of trace steps the Viz-Engine plays back. Full contract
 
 | Name | Role |
 |---|---|
-| **Akash Bajpai** | Frontend Lead — UI/UX, Monaco Editor integration, Studio workspace layout |
-| **Hamza Hasan** | Viz-Engine — execution trace playback, animation, visualization layer |
+| **Akash Bajpai** | Sole active maintainer — frontend, backend audit, visualization, testing, and release |
+| Arush | Removed from the project; existing backend work is inherited and requires audit |
+| Hamza Hasan | Unavailable; no work is assigned |
 
 ---
 
@@ -95,15 +94,17 @@ Returns an ordered array of trace steps the Viz-Engine plays back. Full contract
 
 - [x] Monaco-based code editor
 - [x] Backend execution + tracing engine
-- [ ] Viz-Engine playback UI
+- [ ] Viz-Engine playback UI (Akash)
 - [ ] Variable-state diffing per step
 - [ ] Multi-language support (currently JavaScript/TypeScript only)
+
+The current handover status and next milestone order are tracked in [`docs/PROJECT_STATUS.md`](./docs/PROJECT_STATUS.md) and [`docs/V0_CHECKLIST.md`](./docs/V0_CHECKLIST.md).
 
 ---
 
 ## 📄 License
 
-This project is built for educational/demo purposes.
+This project is built for educational/demo purposes. Read [`SECURITY.md`](./SECURITY.md) before exposing execution to untrusted users. A production deployment needs stronger isolation than a same-process Node VM.
 
 ## Demo video: -
 https://drive.google.com/file/d/1hodmGJsjolq9eOAudTudrg0i92VyuN_0/view?usp=sharing
