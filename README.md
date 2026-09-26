@@ -50,6 +50,18 @@ ExecViz/
 └── README.md
 ```
 
+## 📚 Project documents
+
+The working product package is maintained in `docs/`:
+
+- [PRD](./docs/PRD.md) — product goals, users, requirements, and non-goals
+- [Technical design](./docs/DESIGN.md) — system flow, trace model, and UI state
+- [Tech stack](./docs/TECH_STACK.md) — technologies, versions, and policies
+- [Implementation plan](./docs/IMPLEMENTATION_PLAN.md) — milestones and exit criteria
+- [Development workflow](./docs/DEVELOPMENT_WORKFLOW.md) — branches, validation, review, and release
+- [CI/CD pipeline](./docs/CI_CD_PIPELINE.md) — automated checks and branch policy
+- [Release checklist](./docs/RELEASE_CHECKLIST.md) — Version 0 release gate
+
 ---
 
 ## 🚀 Getting Started
